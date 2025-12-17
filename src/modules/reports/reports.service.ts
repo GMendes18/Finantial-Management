@@ -139,14 +139,14 @@ export class ReportsService {
       { month: string; type: TransactionType; total: Prisma.Decimal }[]
     >`
       SELECT
-        DATE_FORMAT(date, '%Y-%m') as month,
+        TO_CHAR(date, 'YYYY-MM') as month,
         type,
         SUM(amount) as total
       FROM transactions
       WHERE user_id = ${userId}
         AND date >= ${startDate}
         AND date <= ${endDate}
-      GROUP BY month, type
+      GROUP BY TO_CHAR(date, 'YYYY-MM'), type
       ORDER BY month ASC
     `
 
