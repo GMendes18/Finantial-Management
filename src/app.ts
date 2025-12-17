@@ -1,14 +1,23 @@
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 import 'express-async-errors'
 
 import { errorHandler } from './shared/middlewares/errorHandler.js'
+import { swaggerSpec } from './config/swagger.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { usersRoutes } from './modules/users/users.routes.js'
 import { categoriesRoutes } from './modules/categories/categories.routes.js'
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js'
 import { reportsRoutes } from './modules/reports/reports.routes.js'
+
+// Import swagger docs
+import './modules/auth/auth.swagger.js'
+import './modules/users/users.swagger.js'
+import './modules/categories/categories.swagger.js'
+import './modules/transactions/transactions.swagger.js'
+import './modules/reports/reports.swagger.js'
 
 const app = express()
 
@@ -23,6 +32,12 @@ app.use(express.urlencoded({ extended: true }))
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// Swagger documentation
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.get('/docs.json', (_req, res) => {
+  res.json(swaggerSpec)
 })
 
 // API routes
