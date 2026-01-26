@@ -11,6 +11,9 @@ import { usersRoutes } from './modules/users/users.routes.js'
 import { categoriesRoutes } from './modules/categories/categories.routes.js'
 import { transactionsRoutes } from './modules/transactions/transactions.routes.js'
 import { reportsRoutes } from './modules/reports/reports.routes.js'
+import { exchangeRoutes } from './modules/exchange/exchange.routes.js'
+import { investmentsRoutes } from './modules/investments/investments.routes.js'
+import { insightsRoutes } from './modules/insights/insights.routes.js'
 
 // Import swagger docs
 import './modules/auth/auth.swagger.js'
@@ -18,6 +21,9 @@ import './modules/users/users.swagger.js'
 import './modules/categories/categories.swagger.js'
 import './modules/transactions/transactions.swagger.js'
 import './modules/reports/reports.swagger.js'
+import './modules/exchange/exchange.swagger.js'
+import './modules/investments/investments.swagger.js'
+import './modules/insights/insights.swagger.js'
 
 const app = express()
 
@@ -46,6 +52,9 @@ app.use('/users', usersRoutes)
 app.use('/categories', categoriesRoutes)
 app.use('/transactions', transactionsRoutes)
 app.use('/reports', reportsRoutes)
+app.use('/exchange', exchangeRoutes)
+app.use('/investments', investmentsRoutes)
+app.use('/insights', insightsRoutes)
 
 // 404 handler
 app.use((_req, res) => {
