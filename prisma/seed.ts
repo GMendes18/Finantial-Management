@@ -3,6 +3,63 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+// Keywords padrão para categorização automática
+const DEFAULT_KEYWORDS: Record<string, string[]> = {
+  // Despesas
+  Alimentacao: [
+    'ifood', 'uber eats', 'rappi', 'restaurante', 'lanchonete',
+    'mercado', 'supermercado', 'padaria', 'açougue', 'hortifruti',
+    'pizza', 'hamburguer', 'sushi', 'delivery', 'marmita',
+    'cafe', 'cafeteria', 'starbucks', 'mcdonalds', 'burger king',
+  ],
+  Transporte: [
+    'uber', '99', 'cabify', '99pop', 'indriver',
+    'posto', 'combustivel', 'gasolina', 'etanol', 'diesel',
+    'estacionamento', 'pedagio', 'ipva', 'onibus', 'metro',
+  ],
+  Moradia: [
+    'aluguel', 'condominio', 'iptu', 'luz', 'energia',
+    'agua', 'esgoto', 'gas', 'internet', 'wifi', 'celular',
+  ],
+  Saude: [
+    'farmacia', 'drogaria', 'consulta', 'medico', 'dentista',
+    'academia', 'smartfit', 'plano de saude', 'unimed',
+  ],
+  Lazer: [
+    'netflix', 'spotify', 'disney', 'hbo', 'amazon prime',
+    'cinema', 'ingresso', 'show', 'teatro', 'viagem', 'hotel',
+  ],
+  Educacao: [
+    'curso', 'faculdade', 'escola', 'udemy', 'alura',
+    'livro', 'livraria', 'mensalidade',
+  ],
+  Compras: [
+    'shopping', 'loja', 'americanas', 'mercado livre', 'shopee',
+    'aliexpress', 'shein', 'renner', 'roupa', 'sapato',
+  ],
+  Contas: [
+    'fatura', 'cartao', 'nubank', 'inter', 'boleto',
+    'parcela', 'emprestimo', 'seguro', 'imposto',
+  ],
+  // Receitas
+  Salario: [
+    'salario', 'salário', 'pagamento', 'holerite',
+    'adiantamento', 'ferias', 'decimo terceiro', 'bonus',
+  ],
+  Freelance: [
+    'freelance', 'projeto', 'servico', 'consultoria',
+    'freela', 'job', 'nota fiscal', 'cliente',
+  ],
+  Investimentos: [
+    'dividendo', 'rendimento', 'juros', 'lucro',
+    'acao', 'fii', 'cdb', 'tesouro', 'poupanca',
+  ],
+  'Outros Ganhos': [
+    'venda', 'reembolso', 'devolucao', 'cashback',
+    'premio', 'presente', 'transferencia recebida',
+  ],
+}
+
 async function main() {
   console.info('Seeding database...')
 
@@ -21,23 +78,23 @@ async function main() {
 
   console.info(`User created: ${user.email} (password: 123456)`)
 
-  // Create categories
+  // Create categories with keywords for auto-categorization
   const incomeCategories = [
-    { name: 'Salario', color: '#22c55e', icon: 'wallet' },
-    { name: 'Freelance', color: '#3b82f6', icon: 'laptop' },
-    { name: 'Investimentos', color: '#8b5cf6', icon: 'trending-up' },
-    { name: 'Outros Ganhos', color: '#14b8a6', icon: 'plus-circle' },
+    { name: 'Salario', color: '#22c55e', icon: 'wallet', keywords: DEFAULT_KEYWORDS['Salario'] || [] },
+    { name: 'Freelance', color: '#3b82f6', icon: 'laptop', keywords: DEFAULT_KEYWORDS['Freelance'] || [] },
+    { name: 'Investimentos', color: '#8b5cf6', icon: 'trending-up', keywords: DEFAULT_KEYWORDS['Investimentos'] || [] },
+    { name: 'Outros Ganhos', color: '#14b8a6', icon: 'plus-circle', keywords: DEFAULT_KEYWORDS['Outros Ganhos'] || [] },
   ]
 
   const expenseCategories = [
-    { name: 'Alimentacao', color: '#f97316', icon: 'utensils' },
-    { name: 'Transporte', color: '#eab308', icon: 'car' },
-    { name: 'Moradia', color: '#ef4444', icon: 'home' },
-    { name: 'Saude', color: '#ec4899', icon: 'heart' },
-    { name: 'Lazer', color: '#06b6d4', icon: 'gamepad' },
-    { name: 'Educacao', color: '#6366f1', icon: 'book' },
-    { name: 'Compras', color: '#a855f7', icon: 'shopping-bag' },
-    { name: 'Contas', color: '#64748b', icon: 'file-text' },
+    { name: 'Alimentacao', color: '#f97316', icon: 'utensils', keywords: DEFAULT_KEYWORDS['Alimentacao'] || [] },
+    { name: 'Transporte', color: '#eab308', icon: 'car', keywords: DEFAULT_KEYWORDS['Transporte'] || [] },
+    { name: 'Moradia', color: '#ef4444', icon: 'home', keywords: DEFAULT_KEYWORDS['Moradia'] || [] },
+    { name: 'Saude', color: '#ec4899', icon: 'heart', keywords: DEFAULT_KEYWORDS['Saude'] || [] },
+    { name: 'Lazer', color: '#06b6d4', icon: 'gamepad', keywords: DEFAULT_KEYWORDS['Lazer'] || [] },
+    { name: 'Educacao', color: '#6366f1', icon: 'book', keywords: DEFAULT_KEYWORDS['Educacao'] || [] },
+    { name: 'Compras', color: '#a855f7', icon: 'shopping-bag', keywords: DEFAULT_KEYWORDS['Compras'] || [] },
+    { name: 'Contas', color: '#64748b', icon: 'file-text', keywords: DEFAULT_KEYWORDS['Contas'] || [] },
   ]
 
   const createdCategories: Record<string, string> = {}
@@ -45,7 +102,7 @@ async function main() {
   for (const cat of incomeCategories) {
     const category = await prisma.category.upsert({
       where: { name_userId: { name: cat.name, userId: user.id } },
-      update: {},
+      update: { keywords: cat.keywords },
       create: {
         ...cat,
         type: TransactionType.INCOME,
@@ -58,7 +115,7 @@ async function main() {
   for (const cat of expenseCategories) {
     const category = await prisma.category.upsert({
       where: { name_userId: { name: cat.name, userId: user.id } },
-      update: {},
+      update: { keywords: cat.keywords },
       create: {
         ...cat,
         type: TransactionType.EXPENSE,

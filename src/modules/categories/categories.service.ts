@@ -1,7 +1,8 @@
 import { TransactionType } from '@prisma/client'
 import { prisma } from '../../database/prisma.js'
 import { NotFoundError, ConflictError, AppError } from '../../shared/errors/AppError.js'
-import { CreateCategoryInput, UpdateCategoryInput } from './categories.schema.js'
+import { CreateCategoryInput, UpdateCategoryInput, SuggestCategoryInput } from './categories.schema.js'
+import { suggestCategory, suggestCategories } from '../../shared/utils/categorizer.js'
 
 export class CategoriesService {
   async findAll(userId: string, type?: TransactionType) {
@@ -92,6 +93,40 @@ export class CategoriesService {
     await prisma.category.delete({
       where: { id },
     })
+  }
+
+  async suggestCategory(userId: string, data: SuggestCategoryInput) {
+    const categories = await prisma.category.findMany({
+      where: { userId, type: data.type },
+    })
+
+    const suggestion = suggestCategory(data.description, categories, data.type)
+
+    if (!suggestion) {
+      return null
+    }
+
+    return {
+      categoryId: suggestion.category.id,
+      categoryName: suggestion.category.name,
+      confidence: suggestion.score,
+      matchedKeyword: suggestion.matchedKeyword,
+    }
+  }
+
+  async suggestCategories(userId: string, data: SuggestCategoryInput, limit: number = 3) {
+    const categories = await prisma.category.findMany({
+      where: { userId, type: data.type },
+    })
+
+    const suggestions = suggestCategories(data.description, categories, data.type, limit)
+
+    return suggestions.map((s) => ({
+      categoryId: s.category.id,
+      categoryName: s.category.name,
+      confidence: s.score,
+      matchedKeyword: s.matchedKeyword,
+    }))
   }
 }
 
