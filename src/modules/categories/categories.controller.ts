@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { TransactionType } from '@prisma/client'
 import { categoriesService } from './categories.service.js'
-import { CreateCategoryInput, UpdateCategoryInput } from './categories.schema.js'
+import { CreateCategoryInput, UpdateCategoryInput, SuggestCategoryInput } from './categories.schema.js'
 
 export class CategoriesController {
   async findAll(req: Request, res: Response) {
@@ -60,6 +60,29 @@ export class CategoriesController {
     await categoriesService.delete(id, userId)
 
     res.status(204).send()
+  }
+
+  async suggest(req: Request<unknown, unknown, SuggestCategoryInput>, res: Response) {
+    const userId = req.user!.sub
+
+    const suggestion = await categoriesService.suggestCategory(userId, req.body)
+
+    res.json({
+      status: 'success',
+      data: suggestion,
+    })
+  }
+
+  async suggestMultiple(req: Request<unknown, unknown, SuggestCategoryInput>, res: Response) {
+    const userId = req.user!.sub
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 3
+
+    const suggestions = await categoriesService.suggestCategories(userId, req.body, limit)
+
+    res.json({
+      status: 'success',
+      data: suggestions,
+    })
   }
 }
 
