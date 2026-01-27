@@ -32,7 +32,7 @@ const insightsCache: Map<string, CacheEntry> = new Map()
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
 export class InsightsService {
   async getInsights(userId: string, forceRefresh = false): Promise<InsightsData> {
@@ -76,7 +76,10 @@ export class InsightsService {
     // Generate insights
     let insights: Insight[]
 
+    console.log('🔍 GEMINI_API_KEY exists:', !!GEMINI_API_KEY)
+
     if (GEMINI_API_KEY) {
+      console.log('🤖 Attempting to generate AI insights...')
       insights = await this.generateAIInsights(
         currentMonthTransactions,
         lastMonthTransactions,
@@ -189,6 +192,7 @@ Retorne APENAS um JSON válido com exatamente 3 insights, sem markdown ou explic
 
 Use "alert" para avisos, "tip" para dicas, "achievement" para conquistas, "trend" para tendências.`
 
+      console.log('📡 Calling Gemini API:', GEMINI_API)
       const response = await fetch(`${GEMINI_API}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,10 +206,12 @@ Use "alert" para avisos, "tip" para dicas, "achievement" para conquistas, "trend
       })
 
       if (!response.ok) {
-        console.error('Gemini API error:', await response.text())
+        const errorText = await response.text()
+        console.error('❌ Gemini API error:', errorText)
         return this.generateRuleBasedInsights(currentTransactions, lastMonthTransactions, summary)
       }
 
+      console.log('✅ Gemini API responded successfully')
       const data = await response.json()
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text
 
