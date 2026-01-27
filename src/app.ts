@@ -14,6 +14,7 @@ import { reportsRoutes } from './modules/reports/reports.routes.js'
 import { exchangeRoutes } from './modules/exchange/exchange.routes.js'
 import { investmentsRoutes } from './modules/investments/investments.routes.js'
 import { insightsRoutes } from './modules/insights/insights.routes.js'
+import statsRoutes from './modules/stats/stats.routes.js'
 
 // Import swagger docs
 import './modules/auth/auth.swagger.js'
@@ -55,6 +56,7 @@ app.use('/reports', reportsRoutes)
 app.use('/exchange', exchangeRoutes)
 app.use('/investments', investmentsRoutes)
 app.use('/insights', insightsRoutes)
+app.use('/stats', statsRoutes)
 
 // 404 handler
 app.use((_req, res) => {
