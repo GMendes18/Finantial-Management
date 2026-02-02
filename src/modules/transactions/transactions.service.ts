@@ -15,6 +15,7 @@ export class TransactionsService {
       userId,
       ...(query.type && { type: query.type }),
       ...(query.categoryId && { categoryId: query.categoryId }),
+      ...(query.isRecurring !== undefined && { isRecurring: query.isRecurring }),
       ...(query.startDate || query.endDate
         ? {
             date: {
@@ -79,6 +80,8 @@ export class TransactionsService {
         ...data,
         amount: new Prisma.Decimal(data.amount),
         userId,
+        // Set lastProcessedDate for recurring transactions
+        ...(data.isRecurring && { lastProcessedDate: data.date }),
       },
       include: {
         category: {
@@ -132,6 +135,124 @@ export class TransactionsService {
     await prisma.transaction.delete({
       where: { id },
     })
+  }
+
+  /**
+   * Get all recurring transactions for a user
+   */
+  async findRecurring(userId: string) {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        isRecurring: true,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
+      },
+      orderBy: { date: 'desc' },
+    })
+
+    return transactions
+  }
+
+  /**
+   * Cancel a recurring transaction (set isRecurring to false)
+   */
+  async cancelRecurring(id: string, userId: string) {
+    await this.findById(id, userId)
+
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        isRecurring: false,
+        frequency: null,
+        recurringEndDate: null,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, color: true, icon: true },
+        },
+      },
+    })
+
+    return transaction
+  }
+
+  /**
+   * Process all due recurring transactions (called by cron job)
+   */
+  async processRecurringTransactions() {
+    const now = new Date()
+
+    // Find all active recurring transactions that need processing
+    const recurringTransactions = await prisma.transaction.findMany({
+      where: {
+        isRecurring: true,
+        OR: [
+          { recurringEndDate: null },
+          { recurringEndDate: { gte: now } },
+        ],
+      },
+    })
+
+    let processed = 0
+
+    for (const transaction of recurringTransactions) {
+      const lastProcessed = transaction.lastProcessedDate || transaction.date
+      const nextDueDate = this.calculateNextDueDate(lastProcessed, transaction.frequency!)
+
+      // Check if it's time to create a new transaction
+      if (nextDueDate <= now) {
+        // Create new transaction instance
+        await prisma.transaction.create({
+          data: {
+            type: transaction.type,
+            amount: transaction.amount,
+            description: transaction.description,
+            date: nextDueDate,
+            categoryId: transaction.categoryId,
+            userId: transaction.userId,
+            isRecurring: false, // The instance is not recurring, only the original
+          },
+        })
+
+        // Update lastProcessedDate on the recurring transaction
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: { lastProcessedDate: nextDueDate },
+        })
+
+        processed++
+      }
+    }
+
+    return { processed, total: recurringTransactions.length }
+  }
+
+  /**
+   * Calculate the next due date based on frequency
+   */
+  private calculateNextDueDate(lastDate: Date, frequency: string): Date {
+    const next = new Date(lastDate)
+
+    switch (frequency) {
+      case 'DAILY':
+        next.setDate(next.getDate() + 1)
+        break
+      case 'WEEKLY':
+        next.setDate(next.getDate() + 7)
+        break
+      case 'MONTHLY':
+        next.setMonth(next.getMonth() + 1)
+        break
+      case 'YEARLY':
+        next.setFullYear(next.getFullYear() + 1)
+        break
+    }
+
+    return next
   }
 }
 

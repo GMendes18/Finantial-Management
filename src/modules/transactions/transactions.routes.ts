@@ -14,8 +14,10 @@ const router = Router()
 router.use(authMiddleware)
 
 router.get('/', validate({ query: transactionQuerySchema }), transactionsController.findAll)
+router.get('/recurring', transactionsController.findRecurring)
 router.get('/:id', validate({ params: transactionIdSchema }), transactionsController.findById)
 router.post('/', validate({ body: createTransactionSchema }), transactionsController.create)
+router.post('/:id/cancel-recurring', validate({ params: transactionIdSchema }), transactionsController.cancelRecurring)
 router.put(
   '/:id',
   validate({ params: transactionIdSchema, body: updateTransactionSchema }),
