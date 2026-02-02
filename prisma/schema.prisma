@@ -42,27 +42,39 @@ model Category {
 }
 
 model Transaction {
-  id          String          @id @default(uuid())
-  type        TransactionType
-  amount      Decimal         @db.Decimal(10, 2)
-  description String?
-  date        DateTime
-  userId      String          @map("user_id")
-  categoryId  String          @map("category_id")
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  id                 String          @id @default(uuid())
+  type               TransactionType
+  amount             Decimal         @db.Decimal(10, 2)
+  description        String?
+  date               DateTime
+  isRecurring        Boolean         @default(false) @map("is_recurring")
+  frequency          Frequency?
+  recurringEndDate   DateTime?       @map("recurring_end_date")
+  lastProcessedDate  DateTime?       @map("last_processed_date")
+  userId             String          @map("user_id")
+  categoryId         String          @map("category_id")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@index([userId, date])
   @@index([categoryId])
+  @@index([isRecurring, lastProcessedDate])
   @@map("transactions")
 }
 
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
 }
 
 model Investment {

@@ -59,6 +59,30 @@ export class TransactionsController {
 
     res.status(204).send()
   }
+
+  async findRecurring(req: Request, res: Response) {
+    const userId = req.user!.sub
+
+    const transactions = await transactionsService.findRecurring(userId)
+
+    res.json({
+      status: 'success',
+      data: transactions,
+    })
+  }
+
+  async cancelRecurring(req: Request<{ id: string }>, res: Response) {
+    const userId = req.user!.sub
+    const { id } = req.params
+
+    const transaction = await transactionsService.cancelRecurring(id, userId)
+
+    res.json({
+      status: 'success',
+      message: 'Recurring transaction cancelled',
+      data: transaction,
+    })
+  }
 }
 
 export const transactionsController = new TransactionsController()

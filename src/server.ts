@@ -1,12 +1,16 @@
 import { app } from './app.js'
 import { env } from './config/env.js'
 import { prisma } from './database/prisma.js'
+import { startRecurringTransactionsJob } from './jobs/recurring-transactions.job.js'
 
 async function main() {
   try {
     // Test database connection
     await prisma.$connect()
     console.info('✅ Database connected')
+
+    // Start cron jobs
+    startRecurringTransactionsJob()
 
     // Start server
     app.listen(env.PORT, () => {
